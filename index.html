@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skysculpt AI — From Text, Images and 3D Models to Drone Formations in Minutes</title>
+<!-- English, calmer-motion version -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#05060B;
+    --panel:#0D0F17;
+    --panel-2:#12141F;
+    --line:#1E212E;
+    --ink:#F1F2F7;
+    --muted:#8A8FA6;
+    --muted-dim:#4B4F60;
+    --cyan:#2DE0E8;
+    --blue:#5B8CFF;
+    --purple:#A85BEA;
+    --cyan-dim:rgba(45,224,232,0.12);
+    --purple-dim:rgba(168,91,234,0.12);
+    --display:'Orbitron', sans-serif;
+    --body:'Inter', sans-serif;
+    --mono:'JetBrains Mono', monospace;
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void); color:var(--ink); font-family:var(--body);
+    line-height:1.6; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  #ambientCanvas{
+    position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:0.55;
+  }
+  a{color:inherit; text-decoration:none;}
+  .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 32px; position:relative; z-index:1;}
+  section{ position:relative; z-index:1;}
+  h1,h2,h3{ font-family:var(--display); font-weight:700; letter-spacing:0.01em; color:var(--ink);}
+
+  .eyebrow{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:9px; margin-bottom:16px;
+  }
+  .eyebrow::before{ content:""; width:6px; height:6px; border-radius:50%; }
+  .e-cyan{ color:var(--cyan);} .e-cyan::before{ background:var(--cyan); box-shadow:0 0 8px 2px var(--cyan-dim);}
+  .e-blue{ color:var(--blue);} .e-blue::before{ background:var(--blue); box-shadow:0 0 8px 2px rgba(91,140,255,0.25);}
+  .e-purple{ color:var(--purple);} .e-purple::before{ background:var(--purple); box-shadow:0 0 8px 2px var(--purple-dim);}
+
+  .btn{
+    font-family:var(--body); font-weight:600; font-size:14.5px; padding:13px 26px; border-radius:999px;
+    border:1px solid var(--line); display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+    transition:transform .18s ease, border-color .18s ease, background .18s ease;
+    background:transparent; color:var(--ink);
+  }
+  .btn-primary{ background:linear-gradient(90deg, var(--cyan), var(--blue)); border-color:transparent; color:#05060B;}
+  .btn-primary:hover{ transform:translateY(-2px); }
+  .btn-ghost:hover{ border-color:var(--muted); transform:translateY(-2px);}
+
+  /* NAV */
+  header{ position:sticky; top:0; z-index:60; background:rgba(5,6,11,0.78); backdrop-filter:blur(10px); border-bottom:1px solid var(--line);}
+  nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:var(--maxw); margin:0 auto;}
+  .logo{ font-family:var(--display); font-weight:700; font-size:18px; display:flex; align-items:center; gap:2px;}
+  .logo .ai{ background:linear-gradient(90deg, var(--cyan), var(--purple)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .nav-links{ display:flex; gap:30px; font-size:14px; color:var(--muted);}
+  .nav-links a:hover{ color:var(--ink); }
+  @media (max-width:760px){ .nav-links{ display:none;} }
+
+  /* HERO */
+  .hero{ padding:88px 0 60px; position:relative;}
+  .hero-mark-holder{ display:flex; justify-content:center; margin-bottom:8px;}
+  #cubeSvg{ animation: heroSway 6.5s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center;}
+  @keyframes heroSway{ 0%{ transform:rotate(-2deg);} 100%{ transform:rotate(2deg);} }
+  .hero-content{ position:relative; z-index:2; max-width:820px; margin:0 auto; text-align:center;}
+  .hero h1{ font-size:clamp(30px,5vw,52px); line-height:1.18; margin-bottom:22px;}
+  .hero p.sub{ font-size:17.5px; color:var(--muted); max-width:600px; margin:0 auto 34px; line-height:1.65;}
+  .hero-cta{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
+  .scroll-cue{ display:flex; justify-content:center; margin-top:56px; font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--muted-dim); text-transform:uppercase;}
+  @media (prefers-reduced-motion: reduce){ #cubeSvg{ animation:none;} }
+
+  /* SECTION SHELL */
+  .section{ padding:96px 0;}
+  .section-head{ max-width:640px; margin:0 auto 56px; text-align:center;}
+  .section-head h2{ font-size:clamp(24px,3.6vw,34px); line-height:1.25;}
+
+  /* FEATURE ROW (image + text alternating) */
+  .feature-row{ display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;}
+  .feature-row.reverse{ direction:rtl; }
+  .feature-row.reverse > *{ direction:ltr; }
+  @media (max-width:880px){ .feature-row{ grid-template-columns:1fr; gap:40px;} .feature-row.reverse{ direction:ltr;} }
+
+  .visual-panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:20px;
+    aspect-ratio:4/3.1; position:relative; overflow:hidden;
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    will-change:transform;
+  }
+  .visual-panel.tilt-active{ transition:transform .08s linear; }
+
+  /* SCROLL FLIGHT PATH — a small drone travels down the page as you scroll */
+  .flight-path{
+    position:fixed; left:26px; top:130px; bottom:130px; width:2px; z-index:40;
+    background:linear-gradient(180deg, var(--cyan), var(--blue) 50%, var(--purple));
+    opacity:0.16; pointer-events:none;
+  }
+  .flight-dot{
+    position:absolute; left:50%; top:0; width:9px; height:9px; margin-left:-4.5px; border-radius:50%;
+    background:var(--cyan); box-shadow:0 0 10px 2px rgba(45,224,232,0.6), 0 0 0 3px rgba(45,224,232,0.08);
+    transition:background .3s ease, box-shadow .3s ease;
+  }
+  @media (max-width:960px){ .flight-path{ display:none; } }
+  @media (prefers-reduced-motion: reduce){ .flight-dot{ transition:none; } }
+  .visual-panel canvas{ width:100%; height:100%; display:block;}
+  .visual-caption{
+    position:absolute; bottom:14px; left:16px; font-family:var(--mono); font-size:10.5px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted-dim);
+  }
+
+  .feature-text h2{ font-size:clamp(22px,3vw,30px); margin-bottom:18px; line-height:1.3;}
+  .feature-list{ display:flex; flex-direction:column; gap:14px;}
+  .feature-list li{ list-style:none; display:flex; gap:12px; font-size:15px; color:#C7CAD8; line-height:1.55;}
+  .feature-list .marker{ flex:0 0 auto; width:6px; height:6px; border-radius:50%; margin-top:8px; background:var(--cyan); box-shadow:0 0 6px 1px var(--cyan-dim);}
+
+  /* HOW IT WORKS */
+  .how-panel{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid var(--line);
+    border-radius:24px; padding:60px 44px; position:relative; overflow:hidden;
+  }
+  .how-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; position:relative; z-index:1;}
+  .how-step{ width:22%; min-width:170px; text-align:center;}
+  .how-num{ font-family:var(--mono); font-size:12px; color:var(--muted-dim); letter-spacing:.1em; margin-bottom:14px;}
+  .how-badge{
+    width:64px; height:64px; border-radius:50%; margin:0 auto 16px; background:var(--void); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; color:var(--cyan);
+  }
+  .how-badge svg{ width:26px; height:26px;}
+  .how-label{ font-family:var(--display); font-weight:600; font-size:14.5px; line-height:1.4;}
+  .how-track{ position:absolute; top:118px; left:60px; right:60px; height:1px; background:var(--line); z-index:0;}
+  @media (max-width:820px){ .how-row{ flex-direction:column; align-items:center; gap:36px;} .how-step{ width:100%;} .how-track{ display:none;} }
+
+  /* FEATURES GRID (unused fallback) */
+  .stat-row{ display:flex; justify-content:center; gap:60px; margin-top:20px; flex-wrap:wrap;}
+  .stat{ text-align:center;}
+  .stat .n{ font-family:var(--display); font-size:30px; font-weight:700; color:var(--cyan);}
+  .stat .l{ font-family:var(--mono); font-size:11px; color:var(--muted-dim); text-transform:uppercase; letter-spacing:.08em; margin-top:6px;}
+
+  /* CLOSING */
+  .closing{ padding:110px 0 120px; text-align:center;}
+  .closing h2{ font-size:clamp(28px,4.4vw,44px); max-width:760px; margin:20px auto 22px; line-height:1.18;}
+  .closing p{ color:var(--muted); font-size:16px; max-width:560px; margin:0 auto 34px; line-height:1.65;}
+
+  footer{ border-top:1px solid var(--line); padding:34px 0;}
+  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;}
+  .footer-row .copy{ font-size:13px; color:var(--muted-dim); font-family:var(--mono);}
+
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{ opacity:1; transform:none;}
+
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+</style>
+</head>
+<body>
+
+<canvas id="ambientCanvas"></canvas>
+<div class="flight-path" id="flightPath" aria-hidden="true">
+  <div class="flight-line"></div>
+  <div class="flight-dot" id="flightDot"></div>
+</div>
+
+<header>
+  <nav>
+    <div class="logo">
+      <svg id="navMark" viewBox="0 0 60 60" width="26" height="26" style="margin-right:2px; overflow:visible;">
+        <circle cx="30" cy="10" r="3.4" fill="#eaf6ff"/>
+        <circle cx="12" cy="22" r="2.6" fill="#22D9D0"/>
+        <circle cx="48" cy="22" r="2.6" fill="#8B6FF0"/>
+        <circle cx="30" cy="34" r="2.6" fill="#5B8CFF"/>
+        <circle cx="12" cy="46" r="2.2" fill="#22D9D0"/>
+        <circle cx="48" cy="46" r="2.2" fill="#8B6FF0"/>
+        <line x1="30" y1="10" x2="12" y2="22" stroke="#22D9D0" stroke-width="1" opacity="0.6"/>
+        <line x1="30" y1="10" x2="48" y2="22" stroke="#8B6FF0" stroke-width="1" opacity="0.6"/>
+        <line x1="12" y1="22" x2="30" y2="34" stroke="#5B8CFF" stroke-width="1" opacity="0.6"/>
+        <line x1="48" y1="22" x2="30" y2="34" stroke="#5B8CFF" stroke-width="1" opacity="0.6"/>
+        <line x1="12" y1="22" x2="12" y2="46" stroke="#22D9D0" stroke-width="1" opacity="0.6"/>
+        <line x1="48" y1="22" x2="48" y2="46" stroke="#8B6FF0" stroke-width="1" opacity="0.6"/>
+        <line x1="30" y1="34" x2="12" y2="46" stroke="#5B8CFF" stroke-width="1" opacity="0.6"/>
+        <line x1="30" y1="34" x2="48" y2="46" stroke="#5B8CFF" stroke-width="1" opacity="0.6"/>
+      </svg>
+      Skysculpt<span class="ai">ai</span>
+    </div>
+    <div class="nav-links">
+      <a href="#how">How It Works</a>
+      <a href="#models-3d">3D Models</a>
+      <a href="#ai-distribution">AI Distribution</a>
+      <a href="#export">Export</a>
+    </div>
+    <a href="mailto:hello@skysculpt.ai" class="btn btn-primary" style="padding:10px 20px; font-size:13.5px;">Get in Touch</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-content">
+    <div class="hero-mark-holder">
+      <svg id="cubeSvg" viewBox="0 0 700 560" style="width:100%; max-width:400px; overflow:visible;">
+        <defs>
+          <filter id="glow" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation="3.2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glowStrong" x="-300%" y="-300%" width="700%" height="700%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g id="edgesGroup" opacity="0"></g>
+        <g id="nodesGroup"></g>
+      </svg>
+    </div>
+    <span class="eyebrow e-cyan" style="justify-content:center; display:inline-flex;">Formation Engine</span>
+    <h1>From Text, Images and 3D Models<br>to Drone Formations in Minutes</h1>
+    <p class="sub">AI-powered design, optimization and drone distribution for professional drone shows.</p>
+    <div class="hero-cta">
+      <a href="mailto:hello@skysculpt.ai" class="btn btn-primary">Get in Touch</a>
+      <a href="#how" class="btn btn-ghost">See How It Works</a>
+    </div>
+  </div>
+  <div class="scroll-cue">Scroll</div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow e-blue">Process</span>
+      <h2>From Concept to Sky, in 4 Steps</h2>
+    </div>
+    <div class="how-panel reveal">
+      <div class="how-track"></div>
+      <svg width="0" height="0" style="position:absolute"><defs>
+        <path id="flowPath" d="M 60 118 L 1040 118"/>
+      </defs></svg>
+      <div class="how-row">
+        <div class="how-step">
+          <div class="how-num">Step 01</div>
+          <div class="how-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg></div>
+          <div class="how-label">Upload Text, Image,<br>Logo or 3D Model</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">Step 02</div>
+          <div class="how-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h11M4 12h16M4 18h7"/><circle cx="17" cy="6" r="1.6"/><circle cx="9" cy="18" r="1.6"/></svg></div>
+          <div class="how-label">Adjust Settings</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">Step 03</div>
+          <div class="how-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>
+          <div class="how-label">Click Generate</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">Step 04</div>
+          <div class="how-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+          <div class="how-label">Export Drone<br>Formation</div>
+        </div>
+      </div>
+      <svg viewBox="0 0 1100 20" style="position:absolute; top:110px; left:0; width:100%; height:20px; pointer-events:none; z-index:0;">
+        <circle r="4" fill="#2DE0E8">
+          <animateMotion dur="4.5s" repeatCount="indefinite" path="M 60 8 L 1040 8"/>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.05;0.9;1" dur="4.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- GENERAL -->
+<section class="section" id="general">
+  <div class="wrap">
+    <div class="feature-row reveal">
+      <div class="visual-panel"><canvas id="cnvGeneral"></canvas><div class="visual-caption">multiple formations · seconds apart</div></div>
+      <div class="feature-text">
+        <span class="eyebrow e-cyan">Platform Benefits</span>
+        <h2>Design Faster.<br>Decide with Confidence.</h2>
+        <ul class="feature-list">
+          <li><span class="marker"></span>Instantly generates multiple versions of the same design</li>
+          <li><span class="marker"></span>Instant estimate of the number of drones required for each design</li>
+          <li><span class="marker"></span>Quickly evaluate the feasibility of a drone show before production</li>
+          <li><span class="marker"></span>Cuts design time from hours to minutes</li>
+          <li><span class="marker"></span>Reduces production cost and speeds up project delivery</li>
+          <li><span class="marker"></span>Enables faster preparation of quotes and client proposals</li>
+          <li><span class="marker"></span>Built for professional drone show companies</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEXT -->
+<section class="section" id="text-feature">
+  <div class="wrap">
+    <div class="feature-row reverse reveal">
+      <div class="visual-panel"><canvas id="cnvText"></canvas><div class="visual-caption">text → formation</div></div>
+      <div class="feature-text">
+        <span class="eyebrow e-blue">Text to Formation</span>
+        <h2>Every Word,<br>a Formation</h2>
+        <ul class="feature-list">
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>Converts text into drone formations</li>
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>Supports multiple languages</li>
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>Supports custom fonts and lettering styles</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- IMAGES & LOGOS -->
+<section class="section" id="images-feature">
+  <div class="wrap">
+    <div class="feature-row reveal">
+      <div class="visual-panel"><canvas id="cnvLogo"></canvas><div class="visual-caption">outline ⇄ fill</div></div>
+      <div class="feature-text">
+        <span class="eyebrow e-purple">Image & Logo Input</span>
+        <h2>Your Logo,<br>in the Sky</h2>
+        <ul class="feature-list">
+          <li><span class="marker" style="background:var(--purple); box-shadow:0 0 6px 1px var(--purple-dim)"></span>Converts logos and images into drone formations</li>
+          <li><span class="marker" style="background:var(--purple); box-shadow:0 0 6px 1px var(--purple-dim)"></span>Preserves the most important features of the design</li>
+          <li><span class="marker" style="background:var(--purple); box-shadow:0 0 6px 1px var(--purple-dim)"></span>Outline Mode</li>
+          <li><span class="marker" style="background:var(--purple); box-shadow:0 0 6px 1px var(--purple-dim)"></span>Fill Mode</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3D MODELS -->
+<section class="section" id="models-3d">
+  <div class="wrap">
+    <div class="feature-row reverse reveal">
+      <div class="visual-panel"><canvas id="cnv3d"></canvas><div class="visual-caption">3D model · point cloud</div></div>
+      <div class="feature-text">
+        <span class="eyebrow e-cyan">3D to Drone Formation</span>
+        <h2>From Polygons<br>to Drones</h2>
+        <ul class="feature-list">
+          <li><span class="marker"></span>Converts images into 3D models with the help of AI</li>
+          <li><span class="marker"></span>Converts 3D models into drone formations</li>
+          <li><span class="marker"></span>Focuses on the features that make an object easily recognizable</li>
+          <li><span class="marker"></span>Automatically simplifies complex models for use in drone shows</li>
+          <li><span class="marker"></span>Reduces the number of drones required without losing the object's shape</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI DISTRIBUTION -->
+<section class="section" id="ai-distribution">
+  <div class="wrap">
+    <div class="feature-row reveal">
+      <div class="visual-panel"><canvas id="cnvAI"></canvas><div class="visual-caption">safety distance · optimized</div></div>
+      <div class="feature-text">
+        <span class="eyebrow e-blue">AI Distribution &amp; Optimization</span>
+        <h2>Precision That<br>Designs Itself</h2>
+        <ul class="feature-list">
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>AI-assisted drone distribution</li>
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>Automatically adapts to the available number of drones</li>
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>Automatic optimization for safe distances between drones</li>
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>Symmetric and balanced point distribution</li>
+          <li><span class="marker" style="background:var(--blue); box-shadow:0 0 6px 1px rgba(91,140,255,0.3)"></span>Smart drone allocation based on the importance of each visual element</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXPORT -->
+<section class="section" id="export">
+  <div class="wrap">
+    <div class="feature-row reverse reveal">
+      <div class="visual-panel"><canvas id="cnvExport"></canvas><div class="visual-caption">ready for takeoff</div></div>
+      <div class="feature-text">
+        <span class="eyebrow e-purple">Export</span>
+        <h2>Ready for Takeoff</h2>
+        <ul class="feature-list">
+          <li><span class="marker" style="background:var(--purple); box-shadow:0 0 6px 1px var(--purple-dim)"></span>Drone-show-ready output</li>
+          <li><span class="marker" style="background:var(--purple); box-shadow:0 0 6px 1px var(--purple-dim)"></span>Compatible with existing drone show workflows and software</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSING -->
+<section class="closing">
+  <div class="wrap reveal">
+    <span class="eyebrow e-cyan" style="justify-content:center; display:inline-flex;">Skysculpt AI</span>
+    <h2>From idea to drone formation, before you've had time to second-guess it.</h2>
+    <p>One platform for the entire design process — from first sketch to export-ready file.</p>
+    <a href="mailto:hello@skysculpt.ai" class="btn btn-primary">Get in Touch</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="logo" style="font-size:15px;">Skysculpt<span class="ai">ai</span></div>
+    <div class="copy">© 2026 Skysculpt AI</div>
+  </div>
+</footer>
+
+<script>
+/* ================= shared utils ================= */
+function lerp(a,b,t){ return a+(b-a)*t; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* reveal on scroll */
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+},{ threshold:0.12 });
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ================= scroll-linked flight path (interactive on scroll) ================= */
+(function(){
+  const dot = document.getElementById('flightDot');
+  const track = document.getElementById('flightPath');
+  if(!dot || !track) return;
+  const palette = [[45,224,232],[91,140,255],[168,91,234]];
+  function colorAt(t){
+    const seg = t<0.5 ? [palette[0],palette[1],t*2] : [palette[1],palette[2],(t-0.5)*2];
+    const r=Math.round(lerp(seg[0][0],seg[1][0],seg[2]));
+    const g=Math.round(lerp(seg[0][1],seg[1][1],seg[2]));
+    const b=Math.round(lerp(seg[0][2],seg[1][2],seg[2]));
+    return `rgb(${r},${g},${b})`;
+  }
+  let ticking=false;
+  function update(){
+    ticking=false;
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const t = clamp(scrollable>0 ? window.scrollY/scrollable : 0, 0, 1);
+    const rect = track.getBoundingClientRect();
+    dot.style.top = (t*rect.height)+'px';
+    const c = colorAt(t);
+    dot.style.background = c;
+    dot.style.boxShadow = `0 0 10px 2px ${c.replace('rgb','rgba').replace(')',',0.6)')}, 0 0 0 3px ${c.replace('rgb','rgba').replace(')',',0.1)')}`;
+  }
+  window.addEventListener('scroll', ()=>{
+    if(!ticking){ ticking=true; requestAnimationFrame(update); }
+  }, {passive:true});
+  update();
+})();
+
+/* ================= 3D tilt-on-hover for visual panels ================= */
+document.querySelectorAll('.visual-panel').forEach(panel=>{
+  panel.style.transformStyle = 'preserve-3d';
+  panel.addEventListener('mousemove', (e)=>{
+    if(reducedMotion) return;
+    const r = panel.getBoundingClientRect();
+    const px = (e.clientX - r.left)/r.width - 0.5;
+    const py = (e.clientY - r.top)/r.height - 0.5;
+    panel.classList.add('tilt-active');
+    panel.style.transform = `perspective(700px) rotateX(${(-py*7).toFixed(2)}deg) rotateY(${(px*9).toFixed(2)}deg) scale3d(1.015,1.015,1.015)`;
+  });
+  panel.addEventListener('mouseleave', ()=>{
+    panel.classList.remove('tilt-active');
+    panel.style.transform = 'perspective(700px) rotateX(0) rotateY(0) scale3d(1,1,1)';
+  });
+});
+
+/* ================= ambient floating drone points (whole-page depth layer) ================= */
+(function(){
+  const canvas = document.getElementById('ambientCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.min(window.devicePixelRatio||1,2), W=0,H=0;
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W*dpr; canvas.height = H*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const palette = ['45,224,232','91,140,255','168,91,234'];
+  const COUNT = 42;
+  const pts = [];
+  for(let i=0;i<COUNT;i++){
+    pts.push({
+      bx: Math.random(), by: Math.random(),
+      z: 0.25 + Math.random()*0.75,
+      phase: Math.random()*Math.PI*2,
+      speed: 0.15 + Math.random()*0.25,
+      color: palette[i%palette.length],
+      r: 0.7 + Math.random()*1.6
+    });
+  }
+
+  let mx=0, my=0, tx=0, ty=0;
+  window.addEventListener('mousemove', (e)=>{
+    tx = (e.clientX/window.innerWidth - 0.5);
+    ty = (e.clientY/window.innerHeight - 0.5);
+  }, {passive:true});
+
+  if(reducedMotion){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{
+      const x = p.bx*W, y = p.by*H;
+      ctx.beginPath(); ctx.arc(x,y,p.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(${p.color},${0.25*p.z})`;
+      ctx.fill();
+    });
+    return;
+  }
+
+  function frame(now){
+    mx += (tx-mx)*0.04; my += (ty-my)*0.04;
+    ctx.clearRect(0,0,W,H);
+    const t = now*0.001;
+    pts.forEach(p=>{
+      const driftX = Math.sin(t*p.speed + p.phase)*8*p.z;
+      const driftY = Math.cos(t*p.speed*0.8 + p.phase)*6*p.z;
+      const parallaxX = mx*26*p.z, parallaxY = my*22*p.z;
+      const x = p.bx*W + driftX + parallaxX;
+      const y = p.by*H + driftY + parallaxY;
+      ctx.beginPath();
+      ctx.arc(x,y,p.r*p.z*1.4,0,Math.PI*2);
+      ctx.fillStyle = `rgba(${p.color},${0.22*p.z})`;
+      ctx.shadowColor = `rgba(${p.color},0.5)`;
+      ctx.shadowBlur = 4*p.z;
+      ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+(function(){
+  const holder = document.querySelector('.hero-mark-holder');
+  if(!holder || reducedMotion) return;
+  let ticking=false;
+  function update(){
+    ticking=false;
+    const t = clamp(window.scrollY/500, 0, 1);
+    holder.style.transform = `translateY(${t*40}px) scale(${1-t*0.08})`;
+    holder.style.opacity = 1 - t*0.6;
+  }
+  window.addEventListener('scroll', ()=>{
+    if(!ticking){ ticking=true; requestAnimationFrame(update); }
+  }, {passive:true});
+})();
+
+/* ================= shape sampling helpers ================= */
+function sampleFromDraw(drawFn, w, h, step, threshold){
+  threshold = threshold || 120;
+  const off = document.createElement('canvas'); off.width=w; off.height=h;
+  const ctx = off.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
+  drawFn(ctx, w, h);
+  const data = ctx.getImageData(0,0,w,h).data;
+  const pts = [];
+  for(let y=0;y<h;y+=step){
+    for(let x=0;x<w;x+=step){
+      const i=(y*w+x)*4;
+      if(data[i]>threshold) pts.push({x,y});
+    }
+  }
+  return pts;
+}
+
+function sampleText(text, w, h, fontSize, step){
+  return sampleFromDraw((ctx,w,h)=>{
+    // Draw each letter separately with real letter-spacing, the way an
+    // actual drone show spells text out as distinct, well-separated
+    // clusters rather than one continuous cramped word.
+    ctx.font = `900 ${fontSize}px Arial, 'Helvetica Neue', sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    const letterGap = fontSize*0.16;
+    const chars = text.split('');
+    const widths = chars.map(c => ctx.measureText(c).width);
+    const totalWidth = widths.reduce((a,b)=>a+b,0) + letterGap*(chars.length-1);
+    let x = w/2 - totalWidth/2;
+    const y = h/2 + fontSize*0.03;
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff';
+    ctx.lineWidth = Math.max(1.6, fontSize*0.034);
+    chars.forEach((c,i)=>{
+      ctx.fillText(c, x, y);
+      ctx.strokeText(c, x, y);
+      x += widths[i] + letterGap;
+    });
+  }, w, h, Math.min(step,5));
+}
+
+function sampleStar(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, outer=Math.min(w,h)*0.36, inner=outer*0.4, spikes=5;
+    ctx.beginPath();
+    let rot=-Math.PI/2, a=Math.PI/spikes;
+    ctx.moveTo(cx, cy-outer);
+    for(let i=0;i<spikes;i++){
+      let x=cx+Math.cos(rot)*outer, y=cy+Math.sin(rot)*outer; ctx.lineTo(x,y); rot+=a;
+      x=cx+Math.cos(rot)*inner; y=cy+Math.sin(rot)*inner; ctx.lineTo(x,y); rot+=a;
+    }
+    ctx.closePath();
+    ctx.fill();
+  }, w, h, step, 90);
+}
+
+function sampleHeart(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2;
+    const s = Math.min(w,h)*0.27;
+    const topCurveHeight = s*0.35;
+    const totalHeight = s + topCurveHeight;
+    const cy = h/2 - totalHeight/2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy+topCurveHeight);
+    ctx.bezierCurveTo(cx, cy, cx-s, cy, cx-s, cy+topCurveHeight);
+    ctx.bezierCurveTo(cx-s, cy+(s+topCurveHeight)/2, cx, cy+(s+topCurveHeight)/2, cx, cy+s+topCurveHeight);
+    ctx.bezierCurveTo(cx, cy+(s+topCurveHeight)/2, cx+s, cy+(s+topCurveHeight)/2, cx+s, cy+topCurveHeight);
+    ctx.bezierCurveTo(cx+s, cy, cx, cy, cx, cy+topCurveHeight);
+    ctx.closePath();
+    ctx.fill();
+  }, w, h, step, 90);
+}
+
+function samplePortrait(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, s=Math.min(w,h);
+    ctx.save(); ctx.translate(cx,cy);
+    // head
+    ctx.beginPath();
+    ctx.arc(0, -s*0.27, s*0.155, 0, Math.PI*2);
+    ctx.fill();
+    // shoulders — a simple, unmistakable bust silhouette
+    ctx.beginPath();
+    ctx.moveTo(-s*0.32, s*0.36);
+    ctx.quadraticCurveTo(-s*0.32, s*0.02, -s*0.13, -s*0.03);
+    ctx.quadraticCurveTo(0, -s*0.07, s*0.13, -s*0.03);
+    ctx.quadraticCurveTo(s*0.32, s*0.02, s*0.32, s*0.36);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }, w, h, step, 90);
+}
+
+function sampleMandala(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, layers=4;
+    ctx.save(); ctx.translate(cx,cy);
+    for(let L=0; L<layers; L++){
+      const spikes = 6+L*2;
+      const outer = Math.min(w,h)*0.18*(L+1.6);
+      const inner = outer*0.55;
+      ctx.save(); ctx.rotate(L*0.35);
+      ctx.beginPath();
+      let rot = -Math.PI/2, step2 = Math.PI/spikes;
+      ctx.moveTo(0,-outer);
+      for(let i=0;i<spikes;i++){
+        let x=Math.cos(rot)*outer, y=Math.sin(rot)*outer; ctx.lineTo(x,y); rot+=step2;
+        x=Math.cos(rot)*inner; y=Math.sin(rot)*inner; ctx.lineTo(x,y); rot+=step2;
+      }
+      ctx.closePath();
+      ctx.globalAlpha = 0.9 - L*0.16;
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  }, w, h, step);
+}
+
+function sampleBird(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h*0.48, s=Math.min(w,h);
+    ctx.save(); ctx.translate(cx,cy);
+    // left wing — swept back, tapering to a point
+    ctx.beginPath();
+    ctx.moveTo(-s*0.015, -s*0.03);
+    ctx.bezierCurveTo(-s*0.08,-s*0.24, -s*0.26,-s*0.40, -s*0.50,-s*0.34);
+    ctx.bezierCurveTo(-s*0.46,-s*0.24, -s*0.34,-s*0.14, -s*0.20,-s*0.10);
+    ctx.bezierCurveTo(-s*0.10,-s*0.07, -s*0.03,-s*0.04, -s*0.015,-s*0.03);
+    ctx.closePath(); ctx.fill();
+    // right wing — mirror
+    ctx.beginPath();
+    ctx.moveTo(s*0.015, -s*0.03);
+    ctx.bezierCurveTo(s*0.08,-s*0.24, s*0.26,-s*0.40, s*0.50,-s*0.34);
+    ctx.bezierCurveTo(s*0.46,-s*0.24, s*0.34,-s*0.14, s*0.20,-s*0.10);
+    ctx.bezierCurveTo(s*0.10,-s*0.07, s*0.03,-s*0.04, s*0.015,-s*0.03);
+    ctx.closePath(); ctx.fill();
+    // body — slim teardrop from chest to tail
+    ctx.beginPath();
+    ctx.moveTo(0,-s*0.14);
+    ctx.bezierCurveTo(s*0.055,-s*0.10, s*0.05,s*0.08, s*0.018,s*0.20);
+    ctx.lineTo(0,s*0.30);
+    ctx.lineTo(-s*0.018,s*0.20);
+    ctx.bezierCurveTo(-s*0.05,s*0.08, -s*0.055,-s*0.10, 0,-s*0.14);
+    ctx.closePath(); ctx.fill();
+    // head
+    ctx.beginPath();
+    ctx.ellipse(0, -s*0.155, s*0.032, s*0.038, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }, w, h, step, 90);
+}
+
+function sampleOutlineMark(w,h,step,filled){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, s=Math.min(w,h)*0.3;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-s);
+    ctx.quadraticCurveTo(cx+s*0.32, cy-s*0.55, cx+s*0.9, cy-s*0.12);
+    ctx.quadraticCurveTo(cx+s*0.55, cy+s*0.1, cx, cy+s);
+    ctx.quadraticCurveTo(cx-s*0.55, cy+s*0.1, cx-s*0.9, cy-s*0.12);
+    ctx.quadraticCurveTo(cx-s*0.32, cy-s*0.55, cx, cy-s);
+    ctx.closePath();
+    if(filled){ ctx.fill(); }
+    else { ctx.lineWidth = s*0.1; ctx.stroke(); }
+  }, w, h, step, 90);
+}
+
+function sampleClock(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, r=Math.min(w,h)*0.28;
+    ctx.lineWidth = r*0.12; ctx.lineCap='round'; ctx.strokeStyle='#fff';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx, cy-r*0.62); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+r*0.42, cy+r*0.18); ctx.stroke();
+  }, w, h, step, 90);
+}
+
+function sampleArrowUp(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, s=Math.min(w,h)*0.3;
+    ctx.lineWidth = s*0.16; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#fff';
+    ctx.beginPath();
+    ctx.moveTo(cx-s*0.7, cy+s*0.5);
+    ctx.lineTo(cx-s*0.2, cy);
+    ctx.lineTo(cx+s*0.25, cy+s*0.35);
+    ctx.lineTo(cx+s*0.85, cy-s*0.55);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx+s*0.35, cy-s*0.6); ctx.lineTo(cx+s*0.85,cy-s*0.55); ctx.lineTo(cx+s*0.78,cy-s*0.08);
+    ctx.stroke();
+  }, w, h, step, 90);
+}
+
+function sampleCheck(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, s=Math.min(w,h)*0.3;
+    ctx.lineWidth = s*0.18; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#fff';
+    ctx.beginPath();
+    ctx.moveTo(cx-s*0.6, cy+s*0.05);
+    ctx.lineTo(cx-s*0.15, cy+s*0.55);
+    ctx.lineTo(cx+s*0.7, cy-s*0.55);
+    ctx.stroke();
+  }, w, h, step, 90);
+}
+
+function sampleExportGlyph(w,h,step){
+  return sampleFromDraw((ctx,w,h)=>{
+    const cx=w/2, cy=h/2, s=Math.min(w,h)*0.22;
+    ctx.lineWidth = s*0.22; ctx.lineCap='round'; ctx.strokeStyle='#fff';
+    ctx.beginPath(); ctx.moveTo(cx,cy-s); ctx.lineTo(cx,cy+s*0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-s*0.55,cy-s*0.45); ctx.lineTo(cx,cy-s); ctx.lineTo(cx+s*0.55,cy-s*0.45); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx-s*1.15, cy+s*0.9);
+    ctx.lineTo(cx-s*1.15, cy+s*1.35);
+    ctx.lineTo(cx+s*1.15, cy+s*1.35);
+    ctx.lineTo(cx+s*1.15, cy+s*0.9);
+    ctx.stroke();
+  }, w, h, step, 90);
+}
+
+/* ================= 2D formation renderer (scatter -> converge) ================= */
+function makeRenderer(canvas, colorFn){
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.min(window.devicePixelRatio||1,2);
+  let W=0,H=0, particles=[];
+
+  function resize(){
+    const rect = canvas.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    canvas.width = W*dpr; canvas.height = H*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  window.addEventListener('resize', ()=>{ resize(); draw(); });
+
+  function setTargets(pts, boundsW, boundsH){
+    const offsetX=(W-boundsW)/2, offsetY=(H-boundsH)/2;
+    const targets = pts.map(p=>({x:p.x+offsetX, y:p.y+offsetY}));
+    while(particles.length < targets.length){
+      particles.push({ sx:0, sy:0, r:Math.random()*0.6+1.3 });
+    }
+    particles.length = targets.length;
+    // calmer motion: each dot starts close to its own target rather than
+    // scattered randomly across the whole canvas, so the formation settles
+    // into place instead of flying in chaotically from everywhere
+    const settleRadius = Math.min(W,H)*0.22;
+    particles.forEach((p,i)=>{
+      p.tx=targets[i].x; p.ty=targets[i].y;
+      const a = Math.random()*Math.PI*2;
+      const r = settleRadius*(0.4+Math.random()*0.6);
+      p.sx = p.tx + Math.cos(a)*r;
+      p.sy = p.ty + Math.sin(a)*r;
+    });
+  }
+
+  let progress=0, raf=null;
+  function animateIn(duration){
+    duration = duration || 1400;
+    if(reducedMotion){ progress=1; draw(); return; }
+    const start = performance.now();
+    cancelAnimationFrame(raf);
+    function tick(now){
+      const t = Math.min(1,(now-start)/duration);
+      progress = 1-Math.pow(1-t,3);
+      draw();
+      if(t<1) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach((p,i)=>{
+      const x = lerp(p.sx,p.tx,progress), y = lerp(p.sy,p.ty,progress);
+      const c = colorFn(p,i,particles.length);
+      droneSphere(ctx, x, y, p.r*1.7, rgbOf(c), 1);
+    });
+  }
+  return { setTargets, animateIn, draw, get W(){return W;}, get H(){return H;} };
+}
+
+function gradColor(t){
+  const stops=[[45,224,232],[91,140,255],[168,91,234]];
+  t = clamp(t,0,1);
+  const seg = t<0.5 ? [stops[0],stops[1],t*2] : [stops[1],stops[2],(t-0.5)*2];
+  const r=Math.round(lerp(seg[0][0],seg[1][0],seg[2]));
+  const g=Math.round(lerp(seg[0][1],seg[1][1],seg[2]));
+  const b=Math.round(lerp(seg[0][2],seg[1][2],seg[2]));
+  return `rgb(${r},${g},${b})`;
+}
+function rgbOf(str){ return str.slice(4,-1); } // "rgb(r,g,b)" -> "r,g,b"
+
+/* draw a single drone as a small shaded sphere (radial gradient + highlight)
+   instead of a flat dot, so formations read as glowing 3D objects rather
+   than a scatter of uniform points */
+function droneSphere(ctx, x, y, r, rgbTriplet, opacity){
+  if(r<=0 || opacity<=0) return;
+  const grad = ctx.createRadialGradient(x-r*0.32, y-r*0.32, r*0.05, x, y, r*1.05);
+  grad.addColorStop(0,   `rgba(255,255,255,${0.85*opacity})`);
+  grad.addColorStop(0.32,`rgba(${rgbTriplet},${0.95*opacity})`);
+  grad.addColorStop(1,   `rgba(${rgbTriplet},0)`);
+  ctx.beginPath(); ctx.arc(x,y,r*1.05,0,Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+/* ================= HERO: Skysculpt cube mark (settles once, then gently sways via CSS) ================= */
+(function(){
+  const svg = document.getElementById('cubeSvg');
+  if(!svg) return;
+  const nodesGroup = document.getElementById('nodesGroup');
+  const edgesGroup = document.getElementById('edgesGroup');
+  const svgns = 'http://www.w3.org/2000/svg';
+
+  const SCALE = 92, CX = 350, CY = 300;
+  const ux = {x:0.87,y:0.5}, uy = {x:0,y:-1}, uz = {x:-0.87,y:0.5};
+  function project(x,y,z){
+    return { px: CX+(x*ux.x+y*uy.x+z*uz.x)*SCALE, py: CY+(x*ux.y+y*uy.y+z*uz.y)*SCALE };
+  }
+  function hex(n){ n=Math.max(0,Math.min(255,Math.round(n))); const s=n.toString(16); return s.length<2?'0'+s:s; }
+  function lerpColor(t,c1,c2){ return '#'+hex(c1[0]+(c2[0]-c1[0])*t)+hex(c1[1]+(c2[1]-c1[1])*t)+hex(c1[2]+(c2[2]-c1[2])*t); }
+  const TEAL=[34,217,208], PURPLE=[139,111,240];
+
+  const N=4, nodeMap={};
+  function key(x,y,z){ return x.toFixed(3)+','+y.toFixed(3)+','+z.toFixed(3); }
+  function addNode(x,y,z){
+    const k=key(x,y,z);
+    if(nodeMap[k]) return nodeMap[k];
+    const t=Math.max(0,Math.min(1,(x-z+1)/2));
+    let color=lerpColor(t,TEAL,PURPLE);
+    const isLead = (x===1 && y===1 && z===0);
+    if(isLead) color='#eaf6ff';
+    const p=project(x,y,z);
+    const node={x,y,z,px:p.px,py:p.py,color,lead:isLead,key:k};
+    nodeMap[k]=node; return node;
+  }
+  const faces=[
+    {fix:'y',val:1,va:'x',vb:'z'},
+    {fix:'z',val:1,va:'x',vb:'y'},
+    {fix:'x',val:1,va:'z',vb:'y'}
+  ];
+  const faceGrids = faces.map(f=>{
+    const grid=[];
+    for(let i=0;i<=N;i++){ grid.push([]);
+      for(let j=0;j<=N;j++){
+        const c={x:0,y:0,z:0}; c[f.fix]=f.val; c[f.va]=i/N; c[f.vb]=j/N;
+        grid[i].push(addNode(c.x,c.y,c.z));
+      }
+    }
+    return grid;
+  });
+  const nodes = Object.values(nodeMap);
+  const edges = [];
+  faceGrids.forEach(grid=>{
+    for(let i=0;i<=N;i++){
+      for(let j=0;j<=N;j++){
+        if(i<N) edges.push({a:grid[i][j], b:grid[i+1][j], boundary:(j===0||j===N)});
+        if(j<N) edges.push({a:grid[i][j], b:grid[i][j+1], boundary:(i===0||i===N)});
+        if(i<N && j<N) edges.push({a:grid[i][j], b:grid[i+1][j+1], diag:true});
+      }
+    }
+  });
+
+  edges.forEach(e=>{
+    const line=document.createElementNS(svgns,'line');
+    line.setAttribute('x1',e.a.px); line.setAttribute('y1',e.a.py);
+    line.setAttribute('x2',e.b.px); line.setAttribute('y2',e.b.py);
+    line.setAttribute('stroke',e.a.color);
+    line.setAttribute('stroke-width', e.boundary?1.4:0.6);
+    line.setAttribute('opacity', e.diag?0.35:0.6);
+    if(e.diag) line.setAttribute('stroke-dasharray','3,4');
+    edgesGroup.appendChild(line);
+  });
+  nodes.forEach(n=>{
+    const c=document.createElementNS(svgns,'circle');
+    c.setAttribute('r', n.lead?6:4);
+    c.setAttribute('fill', n.color);
+    c.setAttribute('filter', n.lead?'url(#glowStrong)':'url(#glow)');
+    c.setAttribute('cx', n.px); c.setAttribute('cy', n.py);
+    c.style.opacity = '0';
+    nodesGroup.appendChild(c);
+    n.el = c;
+  });
+
+  function rand(a,b){ return a+Math.random()*(b-a); }
+  function easeOutCubic(t){ return 1-Math.pow(1-t,3); }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  nodes.forEach(n=>{
+    const angle=rand(0,Math.PI*2), radius=rand(160,300);
+    n.sx = CX+Math.cos(angle)*radius; n.sy = CY+Math.sin(angle)*radius;
+    n.delay = rand(0,700);
+  });
+
+  const FLY_IN = 1300;
+  let start=null;
+  function frame(now){
+    if(start===null) start=now;
+    const elapsed = now-start;
+    let allDone = true;
+    nodes.forEach(n=>{
+      const t = clamp((elapsed-n.delay)/FLY_IN,0,1);
+      if(t<1) allDone=false;
+      const e = easeOutCubic(t);
+      n.el.setAttribute('cx', n.sx+(n.px-n.sx)*e);
+      n.el.setAttribute('cy', n.sy+(n.py-n.sy)*e);
+      n.el.style.opacity = 0.15+0.85*clamp(t*2,0,1);
+    });
+    if(!allDone){ requestAnimationFrame(frame); }
+    else { edgesGroup.style.transition='opacity .7s ease'; edgesGroup.style.opacity='1'; }
+  }
+
+  if(reducedMotion){
+    nodes.forEach(n=>{ n.el.setAttribute('cx',n.px); n.el.setAttribute('cy',n.py); n.el.style.opacity='1'; });
+    edgesGroup.style.opacity='1';
+  } else {
+    requestAnimationFrame(frame);
+  }
+})();
+
+/* ================= generic section canvas: play once visible, loop shape cycle ================= */
+function bindSection(id, shapeFns, colorFn, interval){
+  const canvas = document.getElementById(id);
+  if(!canvas) return;
+  const renderer = makeRenderer(canvas, colorFn);
+  let idx=0, timer=null, started=false;
+  function load(){
+    const w=Math.max(renderer.W,200), h=Math.max(renderer.H,150);
+    const pts = shapeFns[idx%shapeFns.length](w,h);
+    renderer.setTargets(pts,w,h);
+    renderer.animateIn(1200);
+    idx++;
+  }
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting && !started){
+        started = true; load();
+        if(!reducedMotion && interval) timer = setInterval(load, interval);
+      }
+    });
+  }, {threshold:0.35});
+  obs.observe(canvas);
+}
+
+/* GENERAL: cycles through the ideas in the bullet list itself —
+   faster iteration (multiple versions), time saved (clock), cost/speed
+   gained (arrow up) — rather than random shapes */
+/* ================= GENERAL: real 3D drone-show shapes (star / heart / rocket) ================= */
+function buildPuffy3D(drawFn, size, angleSteps, phiSteps){
+  // 1. draw the flat silhouette once, off-screen
+  const off = document.createElement('canvas'); off.width=size; off.height=size;
+  const ictx = off.getContext('2d');
+  ictx.fillStyle='#000'; ictx.fillRect(0,0,size,size);
+  ictx.fillStyle='#fff';
+  drawFn(ictx, size, size);
+  const data = ictx.getImageData(0,0,size,size).data;
+  function isInside(x,y){
+    if(x<0||y<0||x>=size||y>=size) return false;
+    const i=(((y|0)*size)+(x|0))*4;
+    return data[i]>90;
+  }
+  // 2. trace the silhouette's boundary radius at each angle from its center —
+  //    this turns ANY drawn shape into a numeric outline function r(theta)
+  const cx=size/2, cy=size/2, maxR=size*0.5;
+  const profile=[];
+  for(let i=0;i<angleSteps;i++){
+    const theta = (i/angleSteps)*Math.PI*2;
+    const dx=Math.cos(theta), dy=Math.sin(theta);
+    let r=0;
+    for(let rr=1; rr<=maxR; rr+=1){
+      if(isInside(cx+dx*rr, cy+dy*rr)) r=rr; else break;
+    }
+    profile.push(r/size);
+  }
+  // 3. loft that outline into a real 3D volume: at the equator (phi=0) it's
+  //    exactly the original silhouette; toward the front/back it tapers,
+  //    like inflating a flat cutout into a puffy 3D cushion. Drones are
+  //    placed all over this outer shell, not just on one flat face.
+  const avgR = profile.reduce((a,b)=>a+b,0)/profile.length;
+  const depthScale = avgR*0.44;
+  const phiMax = Math.PI*0.44;
+  const points=[];
+  for(let i=0;i<angleSteps;i++){
+    const theta = (i/angleSteps)*Math.PI*2;
+    const R = profile[i];
+    for(let j=0;j<phiSteps;j++){
+      const phi = -phiMax + (j/(phiSteps-1))*(2*phiMax);
+      const scale = Math.cos(phi);
+      points.push([ R*scale*Math.cos(theta), R*scale*Math.sin(theta), Math.sin(phi)*depthScale ]);
+    }
+  }
+  return points;
+}
+function drawStarShape(ctx,w,h){
+  const cx=w/2, cy=h/2, outer=w*0.42, inner=outer*0.44, spikes=5;
+  ctx.beginPath();
+  let rot=-Math.PI/2, a=Math.PI/spikes;
+  ctx.moveTo(cx,cy-outer);
+  for(let i=0;i<spikes;i++){
+    let x=cx+Math.cos(rot)*outer, y=cy+Math.sin(rot)*outer; ctx.lineTo(x,y); rot+=a;
+    x=cx+Math.cos(rot)*inner; y=cy+Math.sin(rot)*inner; ctx.lineTo(x,y); rot+=a;
+  }
+  ctx.closePath(); ctx.fill();
+}
+function drawHeartShape(ctx,w,h){
+  const cx=w/2; const s=w*0.34; const topCurveHeight=s*0.32;
+  const totalHeight=s+topCurveHeight; const cy=h/2-totalHeight/2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy+topCurveHeight);
+  ctx.bezierCurveTo(cx, cy, cx-s, cy, cx-s, cy+topCurveHeight);
+  ctx.bezierCurveTo(cx-s, cy+(s+topCurveHeight)/2, cx, cy+(s+topCurveHeight)/2, cx, cy+s+topCurveHeight);
+  ctx.bezierCurveTo(cx, cy+(s+topCurveHeight)/2, cx+s, cy+(s+topCurveHeight)/2, cx+s, cy+topCurveHeight);
+  ctx.bezierCurveTo(cx+s, cy, cx, cy, cx, cy+topCurveHeight);
+  ctx.closePath(); ctx.fill();
+}
+function drawRocketShape(ctx,w,h){
+  const cx=w/2, cy=h/2, s=Math.min(w,h);
+  ctx.save(); ctx.translate(cx,cy);
+  // nose + body as one continuous silhouette (no seam at the join)
+  ctx.beginPath();
+  ctx.moveTo(0,-s*0.42);
+  ctx.quadraticCurveTo(s*0.155,-s*0.16, s*0.125,s*0.10);
+  ctx.lineTo(-s*0.125,s*0.10);
+  ctx.quadraticCurveTo(-s*0.155,-s*0.16, 0,-s*0.42);
+  ctx.closePath(); ctx.fill();
+  // fins, flush against the body
+  ctx.beginPath();
+  ctx.moveTo(-s*0.125,-s*0.01); ctx.lineTo(-s*0.30,s*0.20); ctx.lineTo(-s*0.125,s*0.14); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(s*0.125,-s*0.01); ctx.lineTo(s*0.30,s*0.20); ctx.lineTo(s*0.125,s*0.14); ctx.closePath(); ctx.fill();
+  // flame
+  ctx.beginPath();
+  ctx.moveTo(-s*0.075,s*0.10); ctx.quadraticCurveTo(0,s*0.32,s*0.075,s*0.10); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+(function(){
+  const canvas = document.getElementById('cnvGeneral');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.min(window.devicePixelRatio||1,2), W=0,H=0;
+  function resize(){
+    const r = canvas.getBoundingClientRect(); W=r.width; H=r.height;
+    canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  const SIZE = 240;
+  const shapes = [
+    buildPuffy3D(drawStarShape, SIZE, 44, 7),
+    buildPuffy3D(drawHeartShape, SIZE, 44, 7),
+    buildPuffy3D(drawRocketShape, SIZE, 44, 7)
+  ];
+  let shapeIdx = 0, currentPts = shapes[0];
+  let fadeState = 'hold', fadeStart = 0, opacity = 1;
+  const HOLD_MS = 3200, FADE_MS = 700;
+  const TILT_X = 0.55; // fixed camera tilt — viewing the flat formation at an angle, like a real drone show seen from the ground
+
+  let angleY = 0, visible = false;
+  function rotate(v, ay, ax){
+    let x=v[0], y=v[1], z=v[2];
+    let x1 = x*Math.cos(ay) - z*Math.sin(ay), z1 = x*Math.sin(ay) + z*Math.cos(ay);
+    let y1 = y*Math.cos(ax) - z1*Math.sin(ax), z2 = y*Math.sin(ax) + z1*Math.cos(ax);
+    return [x1,y1,z2];
+  }
+
+  function frame(now){
+    if(!visible) return;
+    angleY += 0.006;
+    const elapsedFade = now - fadeStart;
+    if(fadeState==='hold' && elapsedFade>HOLD_MS){ fadeState='out'; fadeStart=now; }
+    else if(fadeState==='out'){
+      opacity = clamp(1-elapsedFade/FADE_MS,0,1);
+      if(elapsedFade>FADE_MS){ shapeIdx=(shapeIdx+1)%shapes.length; currentPts=shapes[shapeIdx]; fadeState='in'; fadeStart=now; }
+    } else if(fadeState==='in'){
+      opacity = clamp(elapsedFade/FADE_MS,0,1);
+      if(elapsedFade>FADE_MS){ fadeState='hold'; fadeStart=now; opacity=1; }
+    }
+
+    ctx.clearRect(0,0,W,H);
+    const S = Math.min(W,H)*1.55, focal=3.0;
+    const proj = currentPts.map(v=>{
+      const r = rotate(v, angleY, TILT_X);
+      const scale = focal/(focal-r[2]);
+      return { x: W/2+r[0]*S*scale, y: H/2+r[1]*S*scale, z:r[2], y0:v[1], scale };
+    });
+    proj.sort((a,b)=>a.z-b.z);
+    proj.forEach(p=>{
+      const depthOp = clamp(0.4+p.z*0.6,0.2,1) * opacity;
+      const rad = 2.6*p.scale;
+      const c = gradColor(0.5+p.y0*1.4);
+      droneSphere(ctx, p.x, p.y, rad, rgbOf(c), depthOp);
+    });
+    requestAnimationFrame(frame);
+  }
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      const was = visible; visible = e.isIntersecting;
+      if(visible && !was){ fadeStart = performance.now(); requestAnimationFrame(frame); }
+    });
+  }, {threshold:0.3});
+  obs.observe(canvas);
+
+  if(reducedMotion){
+    visible = true;
+    ctx.clearRect(0,0,W,H);
+    const S = Math.min(W,H)*1.55, focal=3.0;
+    currentPts.forEach(v=>{
+      const r = rotate(v, 0.5, TILT_X);
+      const scale = focal/(focal-r[2]);
+      const x=W/2+r[0]*S*scale, y=H/2+r[1]*S*scale;
+      const c = gradColor(0.5+v[1]*1.4);
+      droneSphere(ctx, x, y, 2.6*scale, rgbOf(c), 1);
+    });
+  }
+})();
+
+/* TEXT: cycles through words and a lettering-style glyph */
+bindSection('cnvText', [
+  (w,h)=> sampleText('HELLO', w,h, Math.min(h*0.42, w*0.16), 8),
+  (w,h)=> sampleText('SHOW', w,h, Math.min(h*0.42, w*0.18), 8),
+  (w,h)=> sampleText('Aa', w,h, Math.min(h*0.5, w*0.3), 8)
+], (p,i,n)=> gradColor(0.15+0.15*Math.sin(i*0.13)), 4200);
+
+/* IMAGES & LOGOS: outline <-> fill, the two modes described in the text */
+bindSection('cnvLogo', [
+  (w,h)=> sampleOutlineMark(w,h,7,false),
+  (w,h)=> sampleOutlineMark(w,h,8,true)
+], (p,i,n)=> gradColor(0.6+0.3*Math.sin(i*0.2)), 3600);
+
+/* EXPORT: export glyph, then a checkmark for "ready" — matches the copy */
+bindSection('cnvExport', [
+  (w,h)=> sampleExportGlyph(w,h,7),
+  (w,h)=> sampleCheck(w,h,7)
+], (p,i,n)=> gradColor(0.65+0.25*Math.sin(i*0.25)), 3800);
+
+/* ================= AI DISTRIBUTION: self-optimizing swarm ================= */
+(function(){
+  const canvas = document.getElementById('cnvAI');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.min(window.devicePixelRatio||1,2), W=0,H=0;
+  function resize(){
+    const r = canvas.getBoundingClientRect(); W=r.width; H=r.height;
+    canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  const COUNT = 16;
+  let nodes = [];
+  function initNodes(){
+    nodes = [];
+    for(let i=0;i<COUNT;i++){
+      const a = (i/COUNT)*Math.PI*2;
+      const r = Math.min(W,H)*0.34;
+      nodes.push({
+        tx: W/2+Math.cos(a)*r, ty: H/2+Math.sin(a)*r*0.85,
+        x: W/2+(Math.random()-0.5)*W*0.7, y: H/2+(Math.random()-0.5)*H*0.7,
+        r: 4
+      });
+    }
+  }
+  let started=false, raf=null, startTime=0;
+  function frame(now){
+    if(!startTime) startTime = now;
+    const elapsed = now-startTime;
+    const t = clamp(elapsed/1600,0,1);
+    const eased = 1-Math.pow(1-t,3);
+    ctx.clearRect(0,0,W,H);
+    nodes.forEach((n,i)=>{
+      n.cx = lerp(n.x,n.tx,eased); n.cy = lerp(n.y,n.ty,eased);
+    });
+    // safety circles
+    nodes.forEach(n=>{
+      ctx.beginPath(); ctx.arc(n.cx,n.cy, 12, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(91,140,255,${0.18*eased})`; ctx.lineWidth=1; ctx.stroke();
+    });
+    // connecting mesh to center
+    ctx.beginPath();
+    nodes.forEach((n,i)=>{
+      const nx = nodes[(i+1)%nodes.length];
+      ctx.moveTo(n.cx,n.cy); ctx.lineTo(nx.cx,nx.cy);
+    });
+    ctx.strokeStyle = `rgba(45,224,232,${0.22*eased})`; ctx.lineWidth=1; ctx.stroke();
+    nodes.forEach(n=>{
+      ctx.beginPath(); ctx.arc(n.cx,n.cy,n.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(91,140,255,${0.9*eased+0.1})`;
+      ctx.shadowColor='rgba(91,140,255,0.6)'; ctx.shadowBlur=6;
+      ctx.fill();
+    });
+    if(!reducedMotion) raf = requestAnimationFrame(frame);
+  }
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting && !started){
+        started = true; initNodes(); startTime=0;
+        raf = requestAnimationFrame(frame);
+        if(!reducedMotion){
+          setInterval(()=>{ initNodes(); startTime=0; }, 5600);
+        }
+      }
+    });
+  }, {threshold:0.35});
+  obs.observe(canvas);
+})();
+
+/* ================= 3D MODELS: an actual rotating drone-show formation (sphere of individual lights) ================= */
+(function(){
+  const canvas = document.getElementById('cnv3d');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.min(window.devicePixelRatio||1,2), W=0,H=0;
+  function resize(){
+    const r = canvas.getBoundingClientRect(); W=r.width; H=r.height;
+    canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  // Real drone shows are built from individual points of light in 3D space —
+  // no connecting mesh. A sphere formation is one of the most recognizable
+  // drone-show shapes, so we distribute ~130 "drones" evenly across a sphere
+  // (Fibonacci sphere = no clustering at the poles) and just rotate it.
+  const COUNT = 130;
+  function fibonacciSphere(samples){
+    const pts = [];
+    const offset = 2/samples;
+    const increment = Math.PI * (3 - Math.sqrt(5));
+    for(let i=0;i<samples;i++){
+      const y = ((i*offset) - 1) + (offset/2);
+      const r = Math.sqrt(Math.max(0, 1 - y*y));
+      const phi = i * increment;
+      pts.push([Math.cos(phi)*r, y, Math.sin(phi)*r]);
+    }
+    return pts;
+  }
+  const drones = fibonacciSphere(COUNT);
+
+  let angleY=0, angleX=0.28;
+  let visible=false;
+  function rotate(v, ay, ax){
+    let x=v[0], y=v[1], z=v[2];
+    let x1 = x*Math.cos(ay) - z*Math.sin(ay);
+    let z1 = x*Math.sin(ay) + z*Math.cos(ay);
+    let y1 = y*Math.cos(ax) - z1*Math.sin(ax);
+    let z2 = y*Math.sin(ax) + z1*Math.cos(ax);
+    return [x1,y1,z2];
+  }
+
+  function frame(){
+    if(!visible){ return; }
+    angleY += 0.0035;
+    ctx.clearRect(0,0,W,H);
+    const S = Math.min(W,H)*0.34;
+    const focal = 3.0;
+    const projected = drones.map(v=>{
+      const r = rotate(v, angleY, angleX);
+      const scale = focal/(focal - r[2]);
+      return { x: W/2 + r[0]*S*scale, y: H/2 + r[1]*S*scale, z:r[2], y0:v[1], scale };
+    });
+    // draw far-side drones first so near-side ones layer on top
+    projected.sort((a,b)=> a.z-b.z);
+    projected.forEach(p=>{
+      const depthOp = clamp(0.4 + p.z*0.55, 0.22, 1);
+      const rad = 2.5*p.scale;
+      const c = gradColor(0.5 + p.y0*0.5);
+      droneSphere(ctx, p.x, p.y, rad, rgbOf(c), depthOp);
+    });
+    requestAnimationFrame(frame);
+  }
+
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      const wasVisible = visible;
+      visible = e.isIntersecting;
+      if(visible && !wasVisible){ requestAnimationFrame(frame); }
+    });
+  }, {threshold:0.3});
+  obs.observe(canvas);
+  if(reducedMotion){
+    visible = true;
+    ctx.clearRect(0,0,W,H);
+    const S = Math.min(W,H)*0.34, focal=3.0;
+    drones.forEach(v=>{
+      const r = rotate(v, 0.6, angleX);
+      const scale = focal/(focal-r[2]);
+      const x=W/2+r[0]*S*scale, y=H/2+r[1]*S*scale;
+      const c = gradColor(0.5+v[1]*0.5);
+      droneSphere(ctx, x, y, 2.5*scale, rgbOf(c), 1);
+    });
+  }
+})();
+</script>
+</body>
+</html>
